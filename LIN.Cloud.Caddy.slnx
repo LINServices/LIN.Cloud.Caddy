@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="LIN.Cloud.Caddy.Persistence/LIN.Cloud.Caddy.Persistence.csproj" Id="7faef035-c140-4269-8412-4194e9cce734" />
+  <Project Path="LIN.Cloud.Caddy.Services/LIN.Cloud.Caddy.Services.csproj" Id="2dbbeaa9-7db7-4c02-af0d-0c27b6ed9447" />
+  <Project Path="LIN.Cloud.Caddy.Test/LIN.Cloud.Caddy.Test.csproj" Id="55280667-76f4-490d-8b6d-12542d7278ff" />
+  <Project Path="LIN.Cloud.Caddy/LIN.Cloud.Caddy.csproj" />
+</Solution>
