@@ -38,8 +38,8 @@ public class RouteServiceTests
         var result = await _routeService.CreateRegistration(id, host, port);
 
         // Assert
-        Assert.True(result.Success);
-        Assert.Equal("Registration successful.", result.Message);
+        Assert.True(result.success);
+        Assert.Equal("Registration successful.", result.message);
         _repositoryMock.Verify(r => r.AddAsync(It.Is<RouteEntity>(e => e.Id == id && e.Host == host && e.Port == port)), Times.Once);
         _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Once);
         _caddyServiceMock.Verify(c => c.CreateRoute(It.Is<CaddyRoute>(r => r.Id == id)), Times.Once);
@@ -62,7 +62,7 @@ public class RouteServiceTests
         var result = await _routeService.CreateRegistration(id, host, port);
 
         // Assert
-        Assert.True(result.Success);
+        Assert.True(result.success);
         Assert.Equal(host, existingEntity.Host);
         Assert.Equal(port, existingEntity.Port);
         _repositoryMock.Verify(r => r.AddAsync(It.IsAny<RouteEntity>()), Times.Never);
@@ -81,8 +81,8 @@ public class RouteServiceTests
         var result = await _routeService.CreateRegistration(id, "host", 80);
 
         // Assert
-        Assert.False(result.Success);
-        Assert.Equal("Saved to DB but failed to update Caddy.", result.Message);
+        Assert.False(result.success);
+        Assert.Equal("Saved to DB but failed to update Caddy.", result.message);
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public class RouteServiceTests
         var result = await _routeService.DeleteRegistration(id);
 
         // Assert
-        Assert.True(result.Success);
+        Assert.True(result.success);
         _caddyServiceMock.Verify(c => c.DeleteRoute(id), Times.Once);
         _repositoryMock.Verify(r => r.DeleteAsync(id), Times.Once);
     }
@@ -119,8 +119,8 @@ public class RouteServiceTests
         var result = await _routeService.RestoreAll();
 
         // Assert
-        Assert.True(result.Success);
-        Assert.Equal(2, result.Count);
+        Assert.True(result.success);
+        Assert.Equal(2, result.count);
         _caddyServiceMock.Verify(c => c.LoadConfig(It.Is<List<CaddyRoute>>(l => l.Count == 2)), Times.Once);
     }
     [Fact]

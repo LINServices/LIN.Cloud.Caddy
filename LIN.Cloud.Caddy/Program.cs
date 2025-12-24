@@ -1,3 +1,4 @@
+using LIN.Cloud.Caddy.Extensions;
 using LIN.Cloud.Caddy.Persistence;
 using LIN.Cloud.Caddy.Services;
 using Microsoft.EntityFrameworkCore;
@@ -7,44 +8,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "LIN Cloud Caddy Service", Version = "v1" });
 
-    // Add Security Definition
-    c.AddSecurityDefinition("ApiKey", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-    {
-        Description = "API Key authentication using the X-API-KEY header",
-        Name = "X-API-KEY",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
-        Scheme = "ApiKey"
-    });
-
-    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
-    {
-        {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-            {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference
-                {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-                    Id = "ApiKey"
-                }
-            },
-            Array.Empty<string>()
-        }
-    });
-});
+// Swagger configuration
+builder.Services.AddSwaggerConfiguration();
 
 // Configure Authentication
-builder.Services.AddAuthentication("ApiKey")
-    .AddScheme<LIN.Cloud.Caddy.Authentication.ApiKeyAuthenticationOptions, LIN.Cloud.Caddy.Authentication.ApiKeyAuthenticationHandler>("ApiKey", options =>
-    {
-        options.HeaderName = "X-API-KEY";
-        options.ApiKey = builder.Configuration["Authentication:MasterKey"] ?? "master-secret-key-2025";
-    });
+builder.Services.AddAuthConfiguration(builder.Configuration);
 
 // Register Persistence
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string not found.");

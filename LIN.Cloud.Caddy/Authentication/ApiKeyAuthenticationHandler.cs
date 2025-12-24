@@ -38,8 +38,7 @@ public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions
 /// <remarks>
 /// Valida la clave contra una 'Master Key' estática o contra las claves registradas en la base de datos.
 /// </remarks>
-public class ApiKeyAuthenticationHandler(
-    IOptionsMonitor<ApiKeyAuthenticationOptions> options,
+public class ApiKeyAuthenticationHandler(IOptionsMonitor<ApiKeyAuthenticationOptions> options,
     ILoggerFactory logger,
     UrlEncoder encoder,
     IApiKeyRepository apiKeyRepo) : AuthenticationHandler<ApiKeyAuthenticationOptions>(options, logger, encoder)
@@ -87,8 +86,6 @@ public class ApiKeyAuthenticationHandler(
 
             if (keyEntity != null && keyEntity.IsActive)
             {
-                Logger.LogInformation("Autenticación exitosa para la clave: {Description}.", keyEntity.Description);
-
                 var claims = new[] {
                     new Claim(ClaimTypes.Name, keyEntity.Description),
                     new Claim(ClaimTypes.Role, "User"),
@@ -109,7 +106,6 @@ public class ApiKeyAuthenticationHandler(
             return AuthenticateResult.Fail("Error interno al validar la clave de seguridad.");
         }
 
-        Logger.LogWarning("Intento de acceso con API Key inválida o inactiva.");
         return AuthenticateResult.Fail("Invalid or inactive API Key.");
     }
 }

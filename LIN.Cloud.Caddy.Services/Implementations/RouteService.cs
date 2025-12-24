@@ -13,7 +13,7 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
     /// <param name="id">ID único del registro.</param>
     /// <param name="host">Host o dominio de la ruta.</param>
     /// <param name="port">Puerto del servicio destino.</param>
-    public async Task<(bool Success, string Message)> CreateRegistration(string id, string host, int port)
+    public async Task<(bool success, string message)> CreateRegistration(string id, string host, int port)
     {
         var entity = new RouteEntity
         {
@@ -57,7 +57,7 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
     /// Elimina un registro de ruta de la base de datos y de Caddy.
     /// </summary>
     /// <param name="id">ID del registro a eliminar.</param>
-    public async Task<(bool Success, string Message)> DeleteRegistration(string id)
+    public async Task<(bool success, string message)> DeleteRegistration(string id)
     {
         var caddySuccess = await caddyService.DeleteRoute(id);
 
@@ -70,7 +70,7 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
         return (true, "Deletion successful.");
     }
 
-    public async Task<(bool Success, int Count)> RestoreAll()
+    public async Task<(bool success, int count)> RestoreAll()
     {
         var entities = await repository.GetAllAsync();
         var routeList = entities.ToList();

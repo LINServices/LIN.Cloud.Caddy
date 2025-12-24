@@ -13,31 +13,31 @@ public class ClientController(IRouteService routeService) : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegistrationRequest request)
     {
-        var result = await routeService.CreateRegistration(request.Id, request.Host, request.Port);
-        if (!result.Success)
-            return BadRequest(result.Message);
+        var (success, message) = await routeService.CreateRegistration(request.Id, request.Host, request.Port);
+        if (!success)
+            return BadRequest(message);
 
-        return Ok(result.Message);
+        return Ok(message);
     }
 
     [HttpDelete("remove/{id}")]
     public async Task<IActionResult> Remove(string id)
     {
-        var result = await routeService.DeleteRegistration(id);
-        if (!result.Success)
-            return BadRequest(result.Message);
+        var (success, message) = await routeService.DeleteRegistration(id);
+        if (!success)
+            return BadRequest(message);
 
-        return Ok(result.Message);
+        return Ok(message);
     }
 
     [HttpPost("restore")]
     public async Task<IActionResult> Restore()
     {
-        var result = await routeService.RestoreAll();
-        if (!result.Success)
+        var (success, count) = await routeService.RestoreAll();
+        if (!success)
             return StatusCode(500, "Failed to restore routes to Caddy.");
 
-        return Ok(new { Message = "Restore process completed.", Count = result.Count });
+        return Ok(new { Message = "Restore process completed.", Count = count });
     }
 
     [HttpGet("version")]
