@@ -109,8 +109,7 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
                     {
                         Set = new Dictionary<string, List<string>>
                         {
-                            { "X-Cloud-provider", new List<string> { "LIN Cloud Lake" } },
-                            { "by-love", new List<string> { "Alexander Giraldo" } }
+                            { "X-Cloud-provider", new List<string> { "LIN Cloud Platform" } }
                         },
                         Delete = new List<string> { "Via" },
                         Deferred = true
