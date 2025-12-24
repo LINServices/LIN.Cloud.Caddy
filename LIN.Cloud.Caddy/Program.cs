@@ -5,26 +5,25 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-// Swagger configuration
+// Configuración de Swagger
 builder.Services.AddSwaggerConfiguration();
 
-// Configure Authentication
+// Configuración de Autenticación
 builder.Services.AddAuthConfiguration(builder.Configuration);
 
-// Register Persistence
+// Registro de Persistencia
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string not found.");
 builder.Services.AddPersistence(connectionString);
 
-// Register Services
+// Registro de Servicios
 builder.Services.AddServices();
 
 var app = builder.Build();
 
-// Auto-migrate database on startup
+// Migración automática de la base de datos al iniciar
 var defaultKey = builder.Configuration["Authentication:DefaultApiKey"] ?? "default-pro-key-2025";
 await app.Services.InitializePersistence(defaultKey);
 

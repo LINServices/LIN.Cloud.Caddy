@@ -12,7 +12,7 @@ internal class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configure index on Host for faster lookups
+        // Configuramos el índice en Host para búsquedas más rápidas
         modelBuilder.Entity<RouteEntity>()
             .HasIndex(r => r.Host);
     }

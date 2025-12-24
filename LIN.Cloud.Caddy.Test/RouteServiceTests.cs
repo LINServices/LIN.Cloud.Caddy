@@ -24,7 +24,7 @@ public class RouteServiceTests
     [Fact]
     public async Task CreateRegistration_Successful_ReturnsSuccess()
     {
-        // Arrange
+        // Preparación
         var id = "test-id";
         var host = "test.domain.com";
         var port = 8080;
@@ -34,12 +34,12 @@ public class RouteServiceTests
         _repositoryMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
         _caddyServiceMock.Setup(c => c.CreateRoute(It.IsAny<CaddyRoute>())).ReturnsAsync(true);
 
-        // Act
+        // Acción
         var result = await _routeService.CreateRegistration(id, host, port);
 
-        // Assert
+        // Verificación
         Assert.True(result.success);
-        Assert.Equal("Registration successful.", result.message);
+        Assert.Equal("Registro completado con éxito.", result.message);
         _repositoryMock.Verify(r => r.AddAsync(It.Is<RouteEntity>(e => e.Id == id && e.Host == host && e.Port == port)), Times.Once);
         _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Once);
         _caddyServiceMock.Verify(c => c.CreateRoute(It.Is<CaddyRoute>(r => r.Id == id)), Times.Once);
@@ -48,7 +48,7 @@ public class RouteServiceTests
     [Fact]
     public async Task CreateRegistration_ExistingRoute_UpdatesAndReturnsSuccess()
     {
-        // Arrange
+        // Preparación
         var id = "test-id";
         var host = "new.domain.com";
         var port = 9090;
@@ -58,10 +58,10 @@ public class RouteServiceTests
         _repositoryMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
         _caddyServiceMock.Setup(c => c.CreateRoute(It.IsAny<CaddyRoute>())).ReturnsAsync(true);
 
-        // Act
+        // Acción
         var result = await _routeService.CreateRegistration(id, host, port);
 
-        // Assert
+        // Verificación
         Assert.True(result.success);
         Assert.Equal(host, existingEntity.Host);
         Assert.Equal(port, existingEntity.Port);
@@ -72,32 +72,32 @@ public class RouteServiceTests
     [Fact]
     public async Task CreateRegistration_CaddyFailure_ReturnsFailure()
     {
-        // Arrange
+        // Preparación
         var id = "test-id";
         _repositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync((RouteEntity?)null);
         _caddyServiceMock.Setup(c => c.CreateRoute(It.IsAny<CaddyRoute>())).ReturnsAsync(false);
 
-        // Act
+        // Acción
         var result = await _routeService.CreateRegistration(id, "host", 80);
 
-        // Assert
+        // Verificación
         Assert.False(result.success);
-        Assert.Equal("Saved to DB but failed to update Caddy.", result.message);
+        Assert.Equal("Se guardó en la base de datos pero falló la actualización en Caddy.", result.message);
     }
 
     [Fact]
     public async Task DeleteRegistration_Successful_ReturnsSuccess()
     {
-        // Arrange
+        // Preparación
         var id = "test-id";
         _caddyServiceMock.Setup(c => c.DeleteRoute(id)).ReturnsAsync(true);
         _repositoryMock.Setup(r => r.DeleteAsync(id)).Returns(Task.CompletedTask);
         _repositoryMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
-        // Act
+        // Acción
         var result = await _routeService.DeleteRegistration(id);
 
-        // Assert
+        // Verificación
         Assert.True(result.success);
         _caddyServiceMock.Verify(c => c.DeleteRoute(id), Times.Once);
         _repositoryMock.Verify(r => r.DeleteAsync(id), Times.Once);
@@ -106,7 +106,7 @@ public class RouteServiceTests
     [Fact]
     public async Task RestoreAll_CallsLoadConfig()
     {
-        // Arrange
+        // Preparación
         var entities = new List<RouteEntity>
         {
             new() { Id = "1", Host = "h1", Port = 1 },
@@ -115,10 +115,10 @@ public class RouteServiceTests
         _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(entities);
         _caddyServiceMock.Setup(c => c.LoadConfig(It.IsAny<List<CaddyRoute>>())).ReturnsAsync(true);
 
-        // Act
+        // Acción
         var result = await _routeService.RestoreAll();
 
-        // Assert
+        // Verificación
         Assert.True(result.success);
         Assert.Equal(2, result.count);
         _caddyServiceMock.Verify(c => c.LoadConfig(It.Is<List<CaddyRoute>>(l => l.Count == 2)), Times.Once);
@@ -126,14 +126,14 @@ public class RouteServiceTests
     [Fact]
     public async Task GetCaddyVersion_CallsCaddyService()
     {
-        // Arrange
+        // Preparación
         var expectedVersion = "v2.8.4";
         _caddyServiceMock.Setup(c => c.GetVersion()).ReturnsAsync(expectedVersion);
 
-        // Act
+        // Acción
         var result = await _routeService.GetCaddyVersion();
 
-        // Assert
+        // Verificación
         Assert.Equal(expectedVersion, result);
         _caddyServiceMock.Verify(c => c.GetVersion(), Times.Once);
     }

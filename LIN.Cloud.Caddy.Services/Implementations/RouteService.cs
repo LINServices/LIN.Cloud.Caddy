@@ -39,7 +39,7 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
         }
         catch (Exception ex)
         {
-            return (false, $"Error saving to DB: {ex.Message}");
+            return (false, $"Error al guardar en la base de datos: {ex.Message}");
         }
 
         var caddyRoute = MapToCaddyRoute(id, host, port);
@@ -47,10 +47,10 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
 
         if (!caddySuccess)
         {
-            return (false, "Saved to DB but failed to update Caddy.");
+            return (false, "Se guardó en la base de datos pero falló la actualización en Caddy.");
         }
 
-        return (true, "Registration successful.");
+        return (true, "Registro completado con éxito.");
     }
 
     /// <summary>
@@ -65,9 +65,9 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
         await repository.SaveChangesAsync();
 
         if (!caddySuccess)
-            return (false, "Deleted from DB but Caddy reported an error or route didn't exist in Caddy.");
+            return (false, "Se eliminó de la base de datos, pero Caddy reportó un error o la ruta no existía en Caddy.");
 
-        return (true, "Deletion successful.");
+        return (true, "Eliminación exitosa.");
     }
 
     public async Task<(bool success, int count)> RestoreAll()

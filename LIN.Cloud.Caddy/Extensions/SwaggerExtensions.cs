@@ -11,10 +11,10 @@ public static class SwaggerExtensions
         {
             c.SwaggerDoc("v1", new OpenApiInfo { Title = "LIN Cloud Caddy Service", Version = "v1" });
 
-            // Add Security Definition
+            // Agregamos la definición de seguridad
             c.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
             {
-                Description = "API Key authentication using the X-API-KEY header",
+                Description = "Autenticación por API Key usando el encabezado X-API-KEY",
                 Name = "X-API-KEY",
                 In = ParameterLocation.Header,
                 Type = SecuritySchemeType.ApiKey,

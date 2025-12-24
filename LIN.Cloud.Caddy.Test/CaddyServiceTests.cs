@@ -28,7 +28,7 @@ public class CaddyServiceTests
     [Fact]
     public async Task CreateRoute_Success_ReturnsTrue()
     {
-        // Arrange
+        // Preparación
         var route = new CaddyRoute { Id = "test-route" };
         _handlerMock
             .Protected()
@@ -42,17 +42,17 @@ public class CaddyServiceTests
                 StatusCode = HttpStatusCode.OK
             });
 
-        // Act
+        // Acción
         var result = await _caddyService.CreateRoute(route);
 
-        // Assert
+        // Verificación
         Assert.True(result);
     }
 
     [Fact]
     public async Task DeleteRoute_Success_ReturnsTrue()
     {
-        // Arrange
+        // Preparación
         var id = "test-route";
         _handlerMock
             .Protected()
@@ -66,17 +66,17 @@ public class CaddyServiceTests
                 StatusCode = HttpStatusCode.OK
             });
 
-        // Act
+        // Acción
         var result = await _caddyService.DeleteRoute(id);
 
-        // Assert
+        // Verificación
         Assert.True(result);
     }
 
     [Fact]
     public async Task LoadConfig_Success_ReturnsTrue()
     {
-        // Arrange
+        // Preparación
         var routes = new List<CaddyRoute> { new() { Id = "1" } };
         _handlerMock
             .Protected()
@@ -90,16 +90,16 @@ public class CaddyServiceTests
                 StatusCode = HttpStatusCode.OK
             });
 
-        // Act
+        // Acción
         var result = await _caddyService.LoadConfig(routes);
 
-        // Assert
+        // Verificación
         Assert.True(result);
     }
     [Fact]
     public async Task GetVersion_Success_ReturnsVersionString()
     {
-        // Arrange
+        // Preparación
         var versionString = "v2.8.4";
         _handlerMock
             .Protected()
@@ -114,10 +114,10 @@ public class CaddyServiceTests
                 Content = new StringContent(versionString)
             });
 
-        // Act
+        // Acción
         var result = await _caddyService.GetVersion();
 
-        // Assert
+        // Verificación
         Assert.Equal(versionString, result);
     }
 }

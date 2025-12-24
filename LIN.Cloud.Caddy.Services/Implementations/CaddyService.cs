@@ -143,7 +143,7 @@ internal class CaddyService(HttpClient httpClient, IConfiguration configuration)
         }
         catch (Exception ex)
         {
-            System.Console.WriteLine($"Initialization Error: {ex.Message}");
+            System.Console.WriteLine($"Error de inicialización: {ex.Message}");
         }
     }
 }

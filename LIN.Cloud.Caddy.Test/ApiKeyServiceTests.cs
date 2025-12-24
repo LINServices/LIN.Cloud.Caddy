@@ -20,15 +20,15 @@ public class ApiKeyServiceTests
     [Fact]
     public async Task GenerateKey_CreatesAndReturnsKey()
     {
-        // Arrange
+        // Preparación
         var description = "Test Key";
         _repositoryMock.Setup(r => r.AddAsync(It.IsAny<ApiKeyEntity>())).Returns(Task.CompletedTask);
         _repositoryMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
-        // Act
+        // Acción
         var result = await _apiKeyService.GenerateKey(description);
 
-        // Assert
+        // Verificación
         Assert.NotNull(result);
         Assert.Equal(description, result.Description);
         Assert.False(string.IsNullOrEmpty(result.Key));
@@ -40,16 +40,16 @@ public class ApiKeyServiceTests
     [Fact]
     public async Task DeactivateKey_ExistingKey_ReturnsTrue()
     {
-        // Arrange
+        // Preparación
         var key = "existing-key";
         var entity = new ApiKeyEntity { Key = key, IsActive = true };
         _repositoryMock.Setup(r => r.GetByKeyAsync(key)).ReturnsAsync(entity);
         _repositoryMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
-        // Act
+        // Acción
         var result = await _apiKeyService.DeactivateKey(key);
 
-        // Assert
+        // Verificación
         Assert.True(result);
         Assert.False(entity.IsActive);
         _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Once);
@@ -58,14 +58,14 @@ public class ApiKeyServiceTests
     [Fact]
     public async Task DeactivateKey_NonExistingKey_ReturnsFalse()
     {
-        // Arrange
+        // Preparación
         var key = "non-existing-key";
         _repositoryMock.Setup(r => r.GetByKeyAsync(key)).ReturnsAsync((ApiKeyEntity?)null);
 
-        // Act
+        // Acción
         var result = await _apiKeyService.DeactivateKey(key);
 
-        // Assert
+        // Verificación
         Assert.False(result);
         _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Never);
     }
