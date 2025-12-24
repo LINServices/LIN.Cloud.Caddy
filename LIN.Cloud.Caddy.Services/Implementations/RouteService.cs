@@ -13,13 +13,15 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
     /// <param name="id">ID único del registro.</param>
     /// <param name="host">Host o dominio de la ruta.</param>
     /// <param name="port">Puerto del servicio destino.</param>
-    public async Task<(bool success, string message)> CreateRegistration(string id, string host, int port)
+    /// <param name="target">IP o host del servicio destino.</param>
+    public async Task<(bool success, string message)> CreateRegistration(string id, string host, int port, string target)
     {
         var entity = new RouteEntity
         {
             Id = id,
             Host = host,
-            Port = port
+            Port = port,
+            Target = target
         };
 
         try
@@ -29,6 +31,7 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
             {
                 existing.Host = host;
                 existing.Port = port;
+                existing.Target = target;
             }
             else
             {
@@ -42,7 +45,7 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
             return (false, $"Error al guardar en la base de datos: {ex.Message}");
         }
 
-        var caddyRoute = MapToCaddyRoute(id, host, port);
+        var caddyRoute = MapToCaddyRoute(id, host, port, target);
         var caddySuccess = await caddyService.CreateRoute(caddyRoute);
 
         if (!caddySuccess)
@@ -75,10 +78,10 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
         var entities = await repository.GetAllAsync();
         var routeList = entities.ToList();
 
-        if (!routeList.Any())
+        if (routeList.Count == 0)
             return (true, 0);
 
-        var routes = routeList.Select(e => MapToCaddyRoute(e.Id, e.Host, e.Port))
+        var routes = routeList.Select(e => MapToCaddyRoute(e.Id, e.Host, e.Port, e.Target))
                              .ToList();
 
         var success = await caddyService.LoadConfig(routes);
@@ -94,7 +97,7 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
         return await caddyService.GetVersion();
     }
 
-    private CaddyRoute MapToCaddyRoute(string id, string host, int port)
+    private static CaddyRoute MapToCaddyRoute(string id, string host, int port, string target)
     {
         return new CaddyRoute
         {
@@ -118,7 +121,7 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
                 new()
                 {
                     Handler = "reverse_proxy",
-                    Upstreams = new List<CaddyUpstream> { new() { Dial = $"127.0.0.1:{port}" } },
+                    Upstreams = new List<CaddyUpstream> { new() { Dial = $"{target}:{port}" } },
                     Headers = new CaddyHeaders
                     {
                         Request = new CaddyHeaderAction { Delete = new List<string> { "Via" } },

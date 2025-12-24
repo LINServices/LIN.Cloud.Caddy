@@ -7,8 +7,8 @@ public interface IRouteService
     /// </summary>
     /// <param name="id">ID único del registro.</param>
     /// <param name="host">Host o dominio de la ruta.</param>
-    /// <param name="port">Puerto del servicio destino.</param>
-    Task<(bool success, string message)> CreateRegistration(string id, string host, int port);
+    /// <param name="target">IP o host del servicio destino.</param>
+    Task<(bool success, string message)> CreateRegistration(string id, string host, int port, string target);
 
     /// <summary>
     /// Elimina un registro de ruta de la base de datos y de Caddy.

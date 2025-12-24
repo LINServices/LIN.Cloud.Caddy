@@ -13,7 +13,7 @@ public class ClientController(IRouteService routeService) : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegistrationRequest request)
     {
-        var (success, message) = await routeService.CreateRegistration(request.Id, request.Host, request.Port);
+        var (success, message) = await routeService.CreateRegistration(request.Id, request.Host, request.Port, request.Target);
         if (!success)
             return BadRequest(message);
 

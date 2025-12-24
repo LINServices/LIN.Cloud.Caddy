@@ -10,6 +10,9 @@ public class RouteEntity
     [Required]
     public string Host { get; set; } = string.Empty;
 
+    [Required]
+    public string Target { get; set; } = "127.0.0.1";
+
     public int Port { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -28,6 +28,7 @@ public class RouteServiceTests
         var id = "test-id";
         var host = "test.domain.com";
         var port = 8080;
+        var target = "192.168.1.10";
 
         _repositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync((RouteEntity?)null);
         _repositoryMock.Setup(r => r.AddAsync(It.IsAny<RouteEntity>())).Returns(Task.CompletedTask);
@@ -35,12 +36,12 @@ public class RouteServiceTests
         _caddyServiceMock.Setup(c => c.CreateRoute(It.IsAny<CaddyRoute>())).ReturnsAsync(true);
 
         // Acción
-        var result = await _routeService.CreateRegistration(id, host, port);
+        var result = await _routeService.CreateRegistration(id, host, port, target);
 
         // Verificación
         Assert.True(result.success);
         Assert.Equal("Registro completado con éxito.", result.message);
-        _repositoryMock.Verify(r => r.AddAsync(It.Is<RouteEntity>(e => e.Id == id && e.Host == host && e.Port == port)), Times.Once);
+        _repositoryMock.Verify(r => r.AddAsync(It.Is<RouteEntity>(e => e.Id == id && e.Host == host && e.Port == port && e.Target == target)), Times.Once);
         _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Once);
         _caddyServiceMock.Verify(c => c.CreateRoute(It.Is<CaddyRoute>(r => r.Id == id)), Times.Once);
     }
@@ -52,19 +53,21 @@ public class RouteServiceTests
         var id = "test-id";
         var host = "new.domain.com";
         var port = 9090;
-        var existingEntity = new RouteEntity { Id = id, Host = "old.domain.com", Port = 8080 };
+        var target = "10.0.0.5";
+        var existingEntity = new RouteEntity { Id = id, Host = "old.domain.com", Port = 8080, Target = "127.0.0.1" };
 
         _repositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(existingEntity);
         _repositoryMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
         _caddyServiceMock.Setup(c => c.CreateRoute(It.IsAny<CaddyRoute>())).ReturnsAsync(true);
 
         // Acción
-        var result = await _routeService.CreateRegistration(id, host, port);
+        var result = await _routeService.CreateRegistration(id, host, port, target);
 
         // Verificación
         Assert.True(result.success);
         Assert.Equal(host, existingEntity.Host);
         Assert.Equal(port, existingEntity.Port);
+        Assert.Equal(target, existingEntity.Target);
         _repositoryMock.Verify(r => r.AddAsync(It.IsAny<RouteEntity>()), Times.Never);
         _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Once);
     }
@@ -78,7 +81,7 @@ public class RouteServiceTests
         _caddyServiceMock.Setup(c => c.CreateRoute(It.IsAny<CaddyRoute>())).ReturnsAsync(false);
 
         // Acción
-        var result = await _routeService.CreateRegistration(id, "host", 80);
+        var result = await _routeService.CreateRegistration(id, "host", 80, "127.0.0.1");
 
         // Verificación
         Assert.False(result.success);
