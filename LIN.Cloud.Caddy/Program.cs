@@ -1,6 +1,7 @@
 using LIN.Cloud.Caddy.Extensions;
 using LIN.Cloud.Caddy.Persistence;
 using LIN.Cloud.Caddy.Services;
+using LIN.Cloud.Caddy.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,6 +27,13 @@ var app = builder.Build();
 // Migración automática de la base de datos al iniciar
 var defaultKey = builder.Configuration["Authentication:DefaultApiKey"] ?? "default-pro-key-2025";
 await app.Services.InitializePersistence(defaultKey);
+
+// Ejecutar el restore de Caddy al iniciar
+using (var scope = app.Services.CreateScope())
+{
+    var routeService = scope.ServiceProvider.GetRequiredService<IRouteService>();
+    await routeService.RestoreAll();
+}
 
 app.MapOpenApi();
 app.UseSwagger();
