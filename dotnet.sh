@@ -5,8 +5,8 @@ wget https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.
 sudo dpkg -i packages-microsoft-prod.deb
 sudo apt update
 
-sudo apt install -y dotnet-runtime-9.0
-sudo apt install -y aspnetcore-runtime-9.0
+sudo apt install -y dotnet-runtime-10.0
+sudo apt install -y aspnetcore-runtime-10.0
 
 ## INICIAR EL SERVICIO
 APP_NAME="lin-cloud-caddy"

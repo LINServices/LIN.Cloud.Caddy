@@ -92,6 +92,51 @@ internal class CaddyService(HttpClient httpClient, IConfiguration configuration)
                                 routes = routes
                             }
                         }
+                    },
+                    tls = new
+                    {
+                        certificates = new
+                        {
+                            automate = new[]
+                             {
+                               "linapps.online",
+                               "*.linapps.online",
+                               "*.linsites.qzz.io"
+                             }
+                        },
+                        automation = new
+                        {
+                            policies = new[]
+                         {
+                           new
+                           {
+                             subjects = new[]
+                             {
+                                "linapps.online",
+                                "*.linapps.online",
+                                 "*.linsites.qzz.io"
+                             },
+                             issuers = new[]
+                             {
+                               new
+                               {
+                                 module = "acme",
+                                 challenges = new
+                                 {
+                                   dns = new
+                                   {
+                                     provider = new
+                                     {
+                                       name = "cloudflare",
+                                       api_token = "yoq22AxVEAQVNT3y4Cdw145i_WZHLyvZvlXJ9CxD"
+                                     }
+                                   }
+                                 }
+                               }
+                             }
+                           }
+                         }
+                        }
                     }
                 }
             };
