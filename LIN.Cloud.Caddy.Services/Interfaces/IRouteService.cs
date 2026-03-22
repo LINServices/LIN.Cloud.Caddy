@@ -8,7 +8,15 @@ public interface IRouteService
     /// <param name="id">ID único del registro.</param>
     /// <param name="host">Host o dominio de la ruta.</param>
     /// <param name="target">IP o host del servicio destino.</param>
-    Task<(bool success, string message)> CreateRegistration(string id, string host, int port, string target);
+    /// <param name="isActive">Indica si la ruta debe estar activa.</param>
+    Task<(bool success, string message)> CreateRegistration(string id, string host, int port, string target, bool isActive = true);
+
+    /// <summary>
+    /// Actualiza el estado activo/inactivo de un registro y sincroniza con Caddy.
+    /// </summary>
+    /// <param name="id">ID del registro.</param>
+    /// <param name="isActive">Nuevo estado.</param>
+    Task<(bool success, string message)> UpdateState(string id, bool isActive);
 
     /// <summary>
     /// Elimina un registro de ruta de la base de datos y de Caddy.

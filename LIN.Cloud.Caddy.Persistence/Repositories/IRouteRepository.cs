@@ -10,5 +10,6 @@ public interface IRouteRepository
     Task<RouteEntity?> GetByHostAsync(string host);
     Task AddAsync(RouteEntity route);
     Task DeleteAsync(string id);
+    Task UpdateStateAsync(string id, bool isActive);
     Task SaveChangesAsync();
 }

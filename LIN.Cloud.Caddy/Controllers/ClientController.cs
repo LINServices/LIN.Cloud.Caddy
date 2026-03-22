@@ -13,7 +13,17 @@ public class ClientController(IRouteService routeService) : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegistrationRequest request)
     {
-        var (success, message) = await routeService.CreateRegistration(request.Id, request.Host, request.Port, request.Target);
+        var (success, message) = await routeService.CreateRegistration(request.Id, request.Host, request.Port, request.Target, request.IsActive);
+        if (!success)
+            return BadRequest(message);
+
+        return Ok(message);
+    }
+
+    [HttpPatch("{id}/state")]
+    public async Task<IActionResult> UpdateState(string id, [FromBody] UpdateStateRequest request)
+    {
+        var (success, message) = await routeService.UpdateState(id, request.IsActive);
         if (!success)
             return BadRequest(message);
 

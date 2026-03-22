@@ -40,6 +40,15 @@ internal class RouteRepository(AppDbContext context) : IRouteRepository
         }
     }
 
+    public async Task UpdateStateAsync(string id, bool isActive)
+    {
+        var route = await context.Routes.FindAsync(id);
+        if (route != null)
+        {
+            route.IsActive = isActive;
+        }
+    }
+
     public async Task SaveChangesAsync()
     {
         await context.SaveChangesAsync();

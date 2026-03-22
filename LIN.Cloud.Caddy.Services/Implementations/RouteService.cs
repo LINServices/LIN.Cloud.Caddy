@@ -14,14 +14,16 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
     /// <param name="host">Host o dominio de la ruta.</param>
     /// <param name="port">Puerto del servicio destino.</param>
     /// <param name="target">IP o host del servicio destino.</param>
-    public async Task<(bool success, string message)> CreateRegistration(string id, string host, int port, string target)
+    /// <param name="isActive">Indica si la ruta debe estar activa.</param>
+    public async Task<(bool success, string message)> CreateRegistration(string id, string host, int port, string target, bool isActive = true)
     {
         var entity = new RouteEntity
         {
             Id = id,
             Host = host,
             Port = port,
-            Target = target
+            Target = target,
+            IsActive = isActive
         };
 
         try
@@ -32,6 +34,7 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
                 existing.Host = host;
                 existing.Port = port;
                 existing.Target = target;
+                existing.IsActive = isActive;
             }
             else
             {
@@ -46,13 +49,59 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
         }
 
         var hostEntities = await repository.GetAllByHostAsync(host);
-        var caddyRoute = MapToCaddyRoute(host, hostEntities);
-        var caddySuccess = await caddyService.CreateRoute(caddyRoute);
+        var activeEntities = hostEntities.Where(e => e.IsActive).ToList();
+
+        bool caddySuccess;
+        if (activeEntities.Count > 0)
+        {
+            var caddyRoute = MapToCaddyRoute(host, activeEntities);
+            caddySuccess = await caddyService.CreateRoute(caddyRoute);
+        }
+        else
+        {
+            caddySuccess = await caddyService.DeleteRoute(host);
+        }
 
         if (!caddySuccess)
             return (false, "Se guardó en la base de datos pero falló la actualización en Caddy.");
 
         return (true, "Registro completado con éxito.");
+    }
+
+    /// <summary>
+    /// Actualiza el estado activo/inactivo de un registro y sincroniza con Caddy.
+    /// </summary>
+    /// <param name="id">ID del registro.</param>
+    /// <param name="isActive">Nuevo estado.</param>
+    public async Task<(bool success, string message)> UpdateState(string id, bool isActive)
+    {
+        var entity = await repository.GetByIdAsync(id);
+        if (entity == null)
+            return (false, "Registro no encontrado.");
+
+        var host = entity.Host;
+
+        await repository.UpdateStateAsync(id, isActive);
+        await repository.SaveChangesAsync();
+
+        var hostEntities = await repository.GetAllByHostAsync(host);
+        var activeEntities = hostEntities.Where(e => e.IsActive).ToList();
+
+        bool caddySuccess;
+        if (activeEntities.Count > 0)
+        {
+            var caddyRoute = MapToCaddyRoute(host, activeEntities);
+            caddySuccess = await caddyService.CreateRoute(caddyRoute);
+        }
+        else
+        {
+            caddySuccess = await caddyService.DeleteRoute(host);
+        }
+
+        if (!caddySuccess)
+            return (false, "Se actualizó el estado en la base de datos, pero falló la actualización en Caddy.");
+
+        return (true, "Estado actualizado con éxito.");
     }
 
     /// <summary>
@@ -99,7 +148,9 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
 
         var routes = routeList
             .GroupBy(e => e.Host)
-            .Select(g => MapToCaddyRoute(g.Key, g))
+            .Select(g => (host: g.Key, active: g.Where(e => e.IsActive).ToList()))
+            .Where(g => g.active.Count > 0)
+            .Select(g => MapToCaddyRoute(g.host, g.active))
             .ToList();
 
         var success = await caddyService.LoadConfig(routes);
