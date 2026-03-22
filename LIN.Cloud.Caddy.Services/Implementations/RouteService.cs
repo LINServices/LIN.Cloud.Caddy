@@ -143,7 +143,14 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
                     Headers = new CaddyHeaders
                     {
                         Request = new CaddyHeaderAction { Delete = new List<string> { "Via" } },
-                        Response = new CaddyHeaderAction { Delete = new List<string> { "Via" } }
+                        Response = new CaddyHeaderAction
+                        {
+                            Delete = new List<string> { "Via" },
+                            Set = new Dictionary<string, List<string>>
+                            {
+                                { "X-Upstream", new List<string> { "{http.reverse_proxy.upstream.hostport}" } }
+                            }
+                        }
                     }
                 }
             }

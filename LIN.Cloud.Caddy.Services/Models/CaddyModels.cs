@@ -71,6 +71,10 @@ public class CaddyHeaders
 
 public class CaddyHeaderAction
 {
+    [JsonPropertyName("set")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, List<string>>? Set { get; set; }
+
     [JsonPropertyName("delete")]
     public List<string> Delete { get; set; } = new();
 }
