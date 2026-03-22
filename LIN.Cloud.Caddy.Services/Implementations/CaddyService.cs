@@ -9,61 +9,119 @@ internal class CaddyService(HttpClient httpClient, IConfiguration configuration)
 {
 
     private readonly string _caddyAdminBaseUrl = configuration["Caddy:AdminBaseUrl"] ?? "http://127.0.0.1:2019";
+    private static readonly SemaphoreSlim _routesSemaphore = new(1, 1);
 
     /// <summary>
-    /// Crea una nueva ruta en la configuración de Caddy.
+    /// Crea o actualiza una ruta en la configuración de Caddy (upsert atómico).
+    /// Solo una ejecución concurrente está permitida a la vez.
     /// </summary>
-    /// <param name="route">El modelo de la ruta de Caddy a crear.</param>
     public async Task<bool> CreateRoute(CaddyRoute route)
     {
+        await _routesSemaphore.WaitAsync();
         try
         {
-            var urlId = $"{_caddyAdminBaseUrl}/id/{route.Id}";
-            var updateResponse = await httpClient.PutAsJsonAsync(urlId, route);
-            if (updateResponse.IsSuccessStatusCode)
-                return true;
-
             var urlRoutes = $"{_caddyAdminBaseUrl}/config/apps/http/servers/srv0/routes";
-            var response = await httpClient.PostAsJsonAsync(urlRoutes, route);
+            var listResponse = await httpClient.GetAsync(urlRoutes);
 
-            if (!response.IsSuccessStatusCode)
+            if (!listResponse.IsSuccessStatusCode)
             {
-                var error = await response.Content.ReadAsStringAsync();
-
-                if (error.Contains("invalid traversal path at: config/apps/http"))
-                {
-                    await InitializeInfrastructure();
-                    response = await httpClient.PostAsJsonAsync(urlRoutes, route);
-                }
-                else if (error.Contains("key already exists: routes"))
-                {
-                    response = await httpClient.PutAsJsonAsync(urlId, route);
-                }
+                await InitializeInfrastructure();
+                var bootstrapResponse = await httpClient.PostAsJsonAsync(urlRoutes, route);
+                return bootstrapResponse.IsSuccessStatusCode;
             }
 
-            return response.IsSuccessStatusCode;
+            var routes = await listResponse.Content.ReadFromJsonAsync<List<CaddyRoute>>() ?? [];
+            var hosts = route.Match.SelectMany(m => m.Host).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            if (!UpsertRouteInList(routes, route, hosts))
+                routes.Add(route);
+
+            var patchResponse = await httpClient.PatchAsJsonAsync(urlRoutes, routes);
+            return patchResponse.IsSuccessStatusCode;
         }
         catch
         {
             return false;
+        }
+        finally
+        {
+            _routesSemaphore.Release();
         }
     }
 
     /// <summary>
-    /// Elimina una ruta de la configuración de Caddy por su ID.
+    /// Elimina una ruta de la configuración de Caddy por su host.
+    /// Solo una ejecución concurrente está permitida a la vez.
     /// </summary>
-    /// <param name="id">El ID de la ruta a eliminar.</param>
-    public async Task<bool> DeleteRoute(string id)
+    public async Task<bool> DeleteRoute(string host)
     {
+        await _routesSemaphore.WaitAsync();
         try
         {
-            var url = $"{_caddyAdminBaseUrl}/id/{id}";
-            var response = await httpClient.DeleteAsync(url);
-            return response.IsSuccessStatusCode;
+            var urlRoutes = $"{_caddyAdminBaseUrl}/config/apps/http/servers/srv0/routes";
+            var listResponse = await httpClient.GetAsync(urlRoutes);
+
+            if (!listResponse.IsSuccessStatusCode)
+                return false;
+
+            var routes = await listResponse.Content.ReadFromJsonAsync<List<CaddyRoute>>() ?? [];
+            RemoveRouteFromList(routes, host);
+
+            var patchResponse = await httpClient.PatchAsJsonAsync(urlRoutes, routes);
+            return patchResponse.IsSuccessStatusCode;
         }
         catch
         {
             return false;
+        }
+        finally
+        {
+            _routesSemaphore.Release();
+        }
+    }
+
+    /// <summary>
+    /// Busca recursivamente (routes y handle subroutes) la ruta que coincide con los hosts
+    /// y la reemplaza en su lugar. Devuelve true si se realizó el reemplazo.
+    /// </summary>
+    private static bool UpsertRouteInList(List<CaddyRoute> routes, CaddyRoute replacement, HashSet<string> hosts)
+    {
+        for (var i = 0; i < routes.Count; i++)
+        {
+            if (routes[i].Match.Any(m => m.Host.Any(h => hosts.Contains(h))))
+            {
+                routes[i] = replacement;
+                return true;
+            }
+
+            foreach (var handle in routes[i].Handle)
+            {
+                if (handle.Routes is not null && UpsertRouteInList(handle.Routes, replacement, hosts))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Elimina recursivamente la primera ruta que coincide con el host dado.
+    /// </summary>
+    private static void RemoveRouteFromList(List<CaddyRoute> routes, string host)
+    {
+        for (var i = routes.Count - 1; i >= 0; i--)
+        {
+            if (routes[i].Match.Any(m => m.Host.Any(h => h.Equals(host, StringComparison.OrdinalIgnoreCase))))
+            {
+                routes.RemoveAt(i);
+                return;
+            }
+
+            foreach (var handle in routes[i].Handle)
+            {
+                if (handle.Routes is not null)
+                    RemoveRouteFromList(handle.Routes, host);
+            }
         }
     }
 

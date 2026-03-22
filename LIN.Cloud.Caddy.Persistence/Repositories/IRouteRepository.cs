@@ -5,6 +5,7 @@ namespace LIN.Cloud.Caddy.Persistence.Repositories;
 public interface IRouteRepository
 {
     Task<IEnumerable<RouteEntity>> GetAllAsync();
+    Task<IEnumerable<RouteEntity>> GetAllByHostAsync(string host);
     Task<RouteEntity?> GetByIdAsync(string id);
     Task<RouteEntity?> GetByHostAsync(string host);
     Task AddAsync(RouteEntity route);

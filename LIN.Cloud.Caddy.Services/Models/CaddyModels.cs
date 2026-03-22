@@ -36,6 +36,10 @@ public class CaddyHandle
     [JsonPropertyName("headers")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public CaddyHeaders? Headers { get; set; }
+
+    [JsonPropertyName("routes")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<CaddyRoute>? Routes { get; set; }
 }
 
 public class CaddyResponse

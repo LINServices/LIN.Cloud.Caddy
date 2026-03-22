@@ -16,6 +16,11 @@ internal class RouteRepository(AppDbContext context) : IRouteRepository
         return await context.Routes.FindAsync(id);
     }
 
+    public async Task<IEnumerable<RouteEntity>> GetAllByHostAsync(string host)
+    {
+        return await context.Routes.Where(r => r.Host == host).ToListAsync();
+    }
+
     public async Task<RouteEntity?> GetByHostAsync(string host)
     {
         return await context.Routes.FirstOrDefaultAsync(r => r.Host == host);

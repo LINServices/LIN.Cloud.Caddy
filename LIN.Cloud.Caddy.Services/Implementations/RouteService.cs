@@ -45,13 +45,12 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
             return (false, $"Error al guardar en la base de datos: {ex.Message}");
         }
 
-        var caddyRoute = MapToCaddyRoute(id, host, port, target);
+        var hostEntities = await repository.GetAllByHostAsync(host);
+        var caddyRoute = MapToCaddyRoute(host, hostEntities);
         var caddySuccess = await caddyService.CreateRoute(caddyRoute);
 
         if (!caddySuccess)
-        {
             return (false, "Se guardó en la base de datos pero falló la actualización en Caddy.");
-        }
 
         return (true, "Registro completado con éxito.");
     }
@@ -62,10 +61,27 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
     /// <param name="id">ID del registro a eliminar.</param>
     public async Task<(bool success, string message)> DeleteRegistration(string id)
     {
-        var caddySuccess = await caddyService.DeleteRoute(id);
+        var entity = await repository.GetByIdAsync(id);
+        if (entity == null)
+            return (false, "Registro no encontrado.");
+
+        var host = entity.Host;
 
         await repository.DeleteAsync(id);
         await repository.SaveChangesAsync();
+
+        var remaining = (await repository.GetAllByHostAsync(host)).ToList();
+
+        bool caddySuccess;
+        if (remaining.Count > 0)
+        {
+            var caddyRoute = MapToCaddyRoute(host, remaining);
+            caddySuccess = await caddyService.CreateRoute(caddyRoute);
+        }
+        else
+        {
+            caddySuccess = await caddyService.DeleteRoute(host);
+        }
 
         if (!caddySuccess)
             return (false, "Se eliminó de la base de datos, pero Caddy reportó un error o la ruta no existía en Caddy.");
@@ -81,8 +97,10 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
         if (routeList.Count == 0)
             return (true, 0);
 
-        var routes = routeList.Select(e => MapToCaddyRoute(e.Id, e.Host, e.Port, e.Target))
-                             .ToList();
+        var routes = routeList
+            .GroupBy(e => e.Host)
+            .Select(g => MapToCaddyRoute(g.Key, g))
+            .ToList();
 
         var success = await caddyService.LoadConfig(routes);
 
@@ -97,11 +115,11 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
         return await caddyService.GetVersion();
     }
 
-    private static CaddyRoute MapToCaddyRoute(string id, string host, int port, string target)
+    private static CaddyRoute MapToCaddyRoute(string host, IEnumerable<RouteEntity> entities)
     {
         return new CaddyRoute
         {
-            Id = id,
+            Id = host,
             Match = new List<CaddyMatch> { new() { Host = new List<string> { host } } },
             Handle = new List<CaddyHandle>
             {
@@ -121,7 +139,7 @@ internal class RouteService(IRouteRepository repository, ICaddyService caddyServ
                 new()
                 {
                     Handler = "reverse_proxy",
-                    Upstreams = new List<CaddyUpstream> { new() { Dial = $"{target}:{port}" } },
+                    Upstreams = entities.Select(e => new CaddyUpstream { Dial = $"{e.Target}:{e.Port}" }).ToList(),
                     Headers = new CaddyHeaders
                     {
                         Request = new CaddyHeaderAction { Delete = new List<string> { "Via" } },
