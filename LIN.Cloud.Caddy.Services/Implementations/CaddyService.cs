@@ -159,6 +159,8 @@ internal class CaddyService(HttpClient httpClient, IConfiguration configuration)
                              {
                                "linapps.online",
                                "*.linapps.online",
+                               "*.linsites.qzz.io",
+                               "*.db.linsites.qzz.io",
                                "*.linsites.qzz.io"
                              }
                         },
@@ -172,7 +174,9 @@ internal class CaddyService(HttpClient httpClient, IConfiguration configuration)
                              {
                                 "linapps.online",
                                 "*.linapps.online",
-                                 "*.linsites.qzz.io"
+                                "*.linsites.qzz.io",
+                                "*.db.linsites.qzz.io",
+                                "*.linsites.qzz.io"
                              },
                              issuers = new[]
                              {
