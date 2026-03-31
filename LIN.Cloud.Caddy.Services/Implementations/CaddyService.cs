@@ -160,8 +160,7 @@ internal class CaddyService(HttpClient httpClient, IConfiguration configuration)
                                "linapps.online",
                                "*.linapps.online",
                                "*.linsites.qzz.io",
-                               "*.db.linsites.qzz.io",
-                               "*.linsites.qzz.io"
+                               "*.db.linsites.qzz.io"
                              }
                         },
                         automation = new
@@ -176,7 +175,6 @@ internal class CaddyService(HttpClient httpClient, IConfiguration configuration)
                                 "*.linapps.online",
                                 "*.linsites.qzz.io",
                                 "*.db.linsites.qzz.io",
-                                "*.linsites.qzz.io"
                              },
                              issuers = new[]
                              {
@@ -204,6 +202,7 @@ internal class CaddyService(HttpClient httpClient, IConfiguration configuration)
             };
 
             var response = await httpClient.PostAsJsonAsync(url, fullConfig);
+            var ss = await response.Content.ReadAsStringAsync();
             return response.IsSuccessStatusCode;
         }
         catch

@@ -2,7 +2,6 @@ using LIN.Cloud.Caddy.Persistence.Models;
 using LIN.Cloud.Caddy.Persistence.Repositories;
 using LIN.Cloud.Caddy.Services.Implementations;
 using Moq;
-using Xunit;
 
 namespace LIN.Cloud.Caddy.Test;
 

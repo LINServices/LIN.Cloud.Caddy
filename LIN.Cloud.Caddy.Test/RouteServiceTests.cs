@@ -4,7 +4,6 @@ using LIN.Cloud.Caddy.Services.Implementations;
 using LIN.Cloud.Caddy.Services.Interfaces;
 using LIN.Cloud.Caddy.Services.Models;
 using Moq;
-using Xunit;
 
 namespace LIN.Cloud.Caddy.Test;
 

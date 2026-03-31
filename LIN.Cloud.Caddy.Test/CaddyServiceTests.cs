@@ -1,10 +1,9 @@
-using System.Net;
 using LIN.Cloud.Caddy.Services.Implementations;
 using LIN.Cloud.Caddy.Services.Models;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using Moq.Protected;
-using Xunit;
+using System.Net;
 
 namespace LIN.Cloud.Caddy.Test;
 
