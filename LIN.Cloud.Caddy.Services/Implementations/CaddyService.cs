@@ -157,8 +157,8 @@ internal class CaddyService(HttpClient httpClient, IConfiguration configuration)
                         {
                             automate = new[]
                              {
-                               "linapps.online",
-                               "*.linapps.online",
+                               "linapps.xyz",
+                               "*.linapps.xyz",
                                "*.linsites.qzz.io",
                                "*.db.linsites.qzz.io"
                              }
@@ -171,8 +171,8 @@ internal class CaddyService(HttpClient httpClient, IConfiguration configuration)
                            {
                              subjects = new[]
                              {
-                                "linapps.online",
-                                "*.linapps.online",
+                                "linapps.xyz",
+                                "*.linapps.xyz",
                                 "*.linsites.qzz.io",
                                 "*.db.linsites.qzz.io",
                              },
