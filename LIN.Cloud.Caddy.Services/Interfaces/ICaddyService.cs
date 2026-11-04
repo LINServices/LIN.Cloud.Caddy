@@ -23,6 +23,26 @@ public interface ICaddyService
     Task<bool> LoadConfig(List<CaddyRoute> routes);
 
     /// <summary>
+    /// Crea o reemplaza un server TCP (layer4) en Caddy.
+    /// </summary>
+    Task<bool> UpsertTcpServer(string name, CaddyTcpServer server);
+
+    /// <summary>
+    /// Elimina un server TCP (layer4) de Caddy. Si no existe se considera exitoso.
+    /// </summary>
+    Task<bool> DeleteTcpServer(string name);
+
+    /// <summary>
+    /// Reemplaza todos los servers TCP (layer4) de Caddy.
+    /// </summary>
+    Task<bool> ReplaceTcpServers(Dictionary<string, CaddyTcpServer> servers);
+
+    /// <summary>
+    /// Asegura que Caddy gestione un certificado automático para cada host indicado.
+    /// </summary>
+    Task<bool> EnsureCertificateHosts(IEnumerable<string> hosts);
+
+    /// <summary>
     /// Obtiene la versión actual de Caddy.
     /// </summary>
     Task<string> GetVersion();

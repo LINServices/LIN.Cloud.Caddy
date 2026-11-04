@@ -10,6 +10,7 @@ public static class ServiceRegistration
     {
         services.AddHttpClient<ICaddyService, CaddyService>();
         services.AddScoped<IRouteService, RouteService>();
+        services.AddScoped<ITcpRouteService, TcpRouteService>();
         services.AddScoped<IApiKeyService, ApiKeyService>();
 
         return services;

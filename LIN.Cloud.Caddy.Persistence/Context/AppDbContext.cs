@@ -6,6 +6,7 @@ namespace LIN.Cloud.Caddy.Persistence.Context;
 internal class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<RouteEntity> Routes => Set<RouteEntity>();
+    public DbSet<TcpRouteEntity> TcpRoutes => Set<TcpRouteEntity>();
     public DbSet<ApiKeyEntity> ApiKeys => Set<ApiKeyEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -15,5 +16,9 @@ internal class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(
         // Configuramos el índice en Host para búsquedas más rápidas
         modelBuilder.Entity<RouteEntity>()
             .HasIndex(r => r.Host);
+
+        modelBuilder.Entity<TcpRouteEntity>()
+            .HasIndex(r => new { r.ListenPort, r.Host })
+            .IsUnique();
     }
 }

@@ -1,7 +1,9 @@
 using LIN.Cloud.Caddy.Services.Interfaces;
 using LIN.Cloud.Caddy.Services.Models;
 using Microsoft.Extensions.Configuration;
+using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json.Nodes;
 
 namespace LIN.Cloud.Caddy.Services.Implementations;
 
@@ -135,11 +137,16 @@ internal class CaddyService(HttpClient httpClient, IConfiguration configuration)
         {
             var url = $"{_caddyAdminBaseUrl}/load";
 
+            // /load reemplaza toda la configuración: se conserva el app layer4 (TCP) vigente.
+            var layer4 = await GetLayer4Config();
+            var tlsHosts = BaseTlsHosts.Concat((await GetTlsHosts() ?? []).Except(BaseTlsHosts)).ToList();
+
             var fullConfig = new
             {
                 admin = new { listen = "0.0.0.0:2019" },
                 apps = new
                 {
+                    layer4,
                     http = new
                     {
                         servers = new
@@ -151,17 +158,36 @@ internal class CaddyService(HttpClient httpClient, IConfiguration configuration)
                             }
                         }
                     },
-                    tls = new
-                    {
+                    tls = BuildTlsApp(tlsHosts)
+                }
+            };
+
+            var response = await httpClient.PostAsJsonAsync(url, fullConfig);
+            var ss = await response.Content.ReadAsStringAsync();
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    // Dominios que siempre gestiona Caddy (ver también LoadConfig).
+    private static readonly string[] BaseTlsHosts =
+    [
+        "linapps.xyz",
+        "*.linapps.xyz",
+        "*.linsites.qzz.io",
+        "*.db.linsites.qzz.io"
+    ];
+
+    private static object BuildTlsApp(List<string> hosts)
+    {
+        return new
+        {
                         certificates = new
                         {
-                            automate = new[]
-                             {
-                               "linapps.xyz",
-                               "*.linapps.xyz",
-                               "*.linsites.qzz.io",
-                               "*.db.linsites.qzz.io"
-                             }
+                            automate = hosts
                         },
                         automation = new
                         {
@@ -169,13 +195,7 @@ internal class CaddyService(HttpClient httpClient, IConfiguration configuration)
                          {
                            new
                            {
-                             subjects = new[]
-                             {
-                                "linapps.xyz",
-                                "*.linapps.xyz",
-                                "*.linsites.qzz.io",
-                                "*.db.linsites.qzz.io",
-                             },
+                             subjects = hosts,
                              issuers = new[]
                              {
                                new
@@ -197,18 +217,190 @@ internal class CaddyService(HttpClient httpClient, IConfiguration configuration)
                            }
                          }
                         }
-                    }
-                }
-            };
+                    };
+    }
 
-            var response = await httpClient.PostAsJsonAsync(url, fullConfig);
-            var ss = await response.Content.ReadAsStringAsync();
-            return response.IsSuccessStatusCode;
+    /// <summary>
+    /// Hosts con certificado automático en Caddy, o null si el app tls no existe.
+    /// </summary>
+    private async Task<List<string>?> GetTlsHosts()
+    {
+        try
+        {
+            var response = await httpClient.GetAsync($"{_caddyAdminBaseUrl}/config/apps/tls/certificates/automate");
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            return await response.Content.ReadFromJsonAsync<List<string>>();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static bool IsCovered(string host, IEnumerable<string> managed)
+    {
+        var dot = host.IndexOf('.');
+        var wildcard = dot > 0 ? "*" + host[dot..] : null;
+
+        return managed.Any(m => m.Equals(host, StringComparison.OrdinalIgnoreCase)
+            || (wildcard != null && m.Equals(wildcard, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    /// <summary>
+    /// Asegura que Caddy gestione un certificado (ACME DNS) para cada host indicado.
+    /// </summary>
+    public async Task<bool> EnsureCertificateHosts(IEnumerable<string> hosts)
+    {
+        var needed = hosts
+            .Where(h => !string.IsNullOrWhiteSpace(h))
+            .Select(h => h.Trim().ToLowerInvariant())
+            .Distinct()
+            .ToList();
+
+        if (needed.Count == 0)
+            return true;
+
+        await _routesSemaphore.WaitAsync();
+        try
+        {
+            var current = await GetTlsHosts();
+
+            if (current is null)
+            {
+                // Sin app tls (Caddy sin LoadConfig previo): se crea con la base y los hosts pedidos.
+                var all = BaseTlsHosts.Concat(needed).Distinct().ToList();
+                return await SetConfig($"{_caddyAdminBaseUrl}/config/apps/tls", BuildTlsApp(all));
+            }
+
+            foreach (var host in needed.Where(h => !IsCovered(h, current)))
+            {
+                var cert = await httpClient.PostAsJsonAsync($"{_caddyAdminBaseUrl}/config/apps/tls/certificates/automate", host);
+                if (!cert.IsSuccessStatusCode)
+                    return false;
+
+                var subject = await httpClient.PostAsJsonAsync($"{_caddyAdminBaseUrl}/config/apps/tls/automation/policies/0/subjects", host);
+                if (!subject.IsSuccessStatusCode)
+                    return false;
+            }
+
+            return true;
         }
         catch
         {
             return false;
         }
+        finally
+        {
+            _routesSemaphore.Release();
+        }
+    }
+
+    /// <summary>
+    /// Establece un valor en la Admin API de Caddy. PATCH reemplaza una ruta existente;
+    /// si no existe, PUT la crea (PUT sobre una ruta existente responde 409).
+    /// </summary>
+    private async Task<bool> SetConfig(string url, object value)
+    {
+        var patch = await httpClient.PatchAsJsonAsync(url, value);
+        if (patch.IsSuccessStatusCode)
+            return true;
+
+        var put = await httpClient.PutAsJsonAsync(url, value);
+        return put.IsSuccessStatusCode;
+    }
+
+    /// <summary>
+    /// Crea o reemplaza un server TCP (layer4) en Caddy.
+    /// </summary>
+    public async Task<bool> UpsertTcpServer(string name, CaddyTcpServer server)
+    {
+        await _routesSemaphore.WaitAsync();
+        try
+        {
+            if (await SetConfig($"{_caddyAdminBaseUrl}/config/apps/layer4/servers/{Uri.EscapeDataString(name)}", server))
+                return true;
+
+            // El app layer4 aún no existe: se crea junto con el server.
+            return await SetConfig($"{_caddyAdminBaseUrl}/config/apps/layer4", new { servers = new Dictionary<string, CaddyTcpServer> { [name] = server } });
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            _routesSemaphore.Release();
+        }
+    }
+
+    /// <summary>
+    /// Elimina un server TCP (layer4) de Caddy. Si no existe se considera exitoso.
+    /// </summary>
+    public async Task<bool> DeleteTcpServer(string name)
+    {
+        await _routesSemaphore.WaitAsync();
+        try
+        {
+            var url = $"{_caddyAdminBaseUrl}/config/apps/layer4/servers/{Uri.EscapeDataString(name)}";
+            var response = await httpClient.DeleteAsync(url);
+            if (response.IsSuccessStatusCode)
+                return true;
+
+            // Caddy responde error cuando la ruta no existe; se confirma consultándola.
+            var check = await httpClient.GetAsync(url);
+            return check.StatusCode == HttpStatusCode.NotFound
+                || (check.IsSuccessStatusCode && (await check.Content.ReadAsStringAsync()).Trim() == "null");
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            _routesSemaphore.Release();
+        }
+    }
+
+    /// <summary>
+    /// Reemplaza todos los servers TCP (layer4) de Caddy.
+    /// </summary>
+    public async Task<bool> ReplaceTcpServers(Dictionary<string, CaddyTcpServer> servers)
+    {
+        await _routesSemaphore.WaitAsync();
+        try
+        {
+            return await SetConfig($"{_caddyAdminBaseUrl}/config/apps/layer4", new { servers });
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            _routesSemaphore.Release();
+        }
+    }
+
+    private async Task<JsonNode> GetLayer4Config()
+    {
+        try
+        {
+            var response = await httpClient.GetAsync($"{_caddyAdminBaseUrl}/config/apps/layer4");
+            if (response.IsSuccessStatusCode)
+            {
+                var node = await response.Content.ReadFromJsonAsync<JsonNode>();
+                if (node is JsonObject)
+                    return node;
+            }
+        }
+        catch
+        {
+            // Sin layer4 vigente (o Caddy sin el módulo): se parte de un app vacío.
+        }
+
+        return new JsonObject { ["servers"] = new JsonObject() };
     }
 
     /// <summary>

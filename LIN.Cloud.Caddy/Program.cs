@@ -33,6 +33,9 @@ using (var scope = app.Services.CreateScope())
 {
     var routeService = scope.ServiceProvider.GetRequiredService<IRouteService>();
     await routeService.RestoreAll();
+
+    var tcpRouteService = scope.ServiceProvider.GetRequiredService<ITcpRouteService>();
+    await tcpRouteService.RestoreAll();
 }
 
 app.MapOpenApi();

@@ -17,11 +17,14 @@ public static class SwaggerExtensions
                 Description = "Autenticación por API Key usando el encabezado X-API-KEY",
                 Name = "X-API-KEY",
                 In = ParameterLocation.Header,
-                Type = SecuritySchemeType.ApiKey,
-                Scheme = "ApiKey"
+                Type = SecuritySchemeType.ApiKey
             });
 
-
+            // Sin este requisito Swagger UI no envía el header en las peticiones.
+            c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference("ApiKey", document)] = []
+            });
         });
 
         return services;
