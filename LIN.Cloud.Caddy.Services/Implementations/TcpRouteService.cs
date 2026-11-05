@@ -170,7 +170,15 @@ internal class TcpRouteService(ITcpRouteRepository repository, ICaddyService cad
 
         // Terminación TLS: Caddy hace el handshake y el destino recibe tráfico en claro.
         if (e.TerminateTls)
-            handlers.Add(new CaddyTcpHandle { Handler = "tls" });
+        {
+            var tls = new CaddyTcpHandle { Handler = "tls" };
+
+            // sslnegotiation=direct (PostgreSQL 17, Npgsql) exige ALPN "postgresql"; sin él el handshake aborta.
+            if (string.Equals(e.Protocol, "postgres", StringComparison.OrdinalIgnoreCase))
+                tls.ConnectionPolicies = [new CaddyTcpConnectionPolicy { Alpn = ["postgresql"] }];
+
+            handlers.Add(tls);
+        }
 
         handlers.Add(new CaddyTcpHandle
         {

@@ -44,6 +44,17 @@ public class CaddyTcpHandle
     [JsonPropertyName("upstreams")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<CaddyTcpUpstream>? Upstreams { get; set; }
+
+    [JsonPropertyName("connection_policies")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<CaddyTcpConnectionPolicy>? ConnectionPolicies { get; set; }
+}
+
+public class CaddyTcpConnectionPolicy
+{
+    [JsonPropertyName("alpn")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<string>? Alpn { get; set; }
 }
 
 public class CaddyTcpUpstream
