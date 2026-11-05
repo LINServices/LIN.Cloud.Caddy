@@ -178,7 +178,14 @@ internal class CaddyService(HttpClient httpClient, IConfiguration configuration)
         "linapps.xyz",
         "*.linapps.xyz",
         "*.linsites.qzz.io",
-        "*.db.linsites.qzz.io"
+        "*.db.linsites.qzz.io",
+        // Motores de datos publicados por SNI: <id>.<motor>.linsites.qzz.io (un comodín por motor).
+        "*.postgres.linsites.qzz.io",
+        "*.mysql.linsites.qzz.io",
+        "*.mongo.linsites.qzz.io",
+        "*.redis.linsites.qzz.io",
+        "*.valkey.linsites.qzz.io",
+        "*.rabbitmq.linsites.qzz.io"
     ];
 
     private static object BuildTlsApp(List<string> hosts)
